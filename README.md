@@ -3,7 +3,8 @@
 A separate admin website for the CampusKit student platform.
 
 ## Features
-- Payment request review (pending, approved, rejected) through the existing CampusKit payments API.
+- Payment request review (pending, approved, rejected) through the existing CampusKit payments API. Accept activates the matching entitlement; Reject leaves access locked.
+- Supports AI Premium (₹59), Intelligence Lab tools (₹5–₹30), and 37 Class XII practical projects (₹20/₹40).
 - Firebase Auth user listing and enable/disable account controls.
 - Public music playlist management using the existing Firestore `publicMusic` collection.
 - Responsive dark blue management dashboard.
@@ -15,7 +16,7 @@ After deployment, add the published Pages hostname to Firebase Authentication �
 
 ## Required Vercel environment variable
 In the existing `campuskit` Vercel project, set:
-- `CAMPUSKIT_ADMIN_EMAIL`: the exact Google account email allowed to administer CampusKit.
+- `CAMPUSKIT_ADMIN_EMAILS`: comma-separated authorized admin emails. The current production value is already configured for the three approved admin accounts.
 
 The existing `FIREBASE_SERVICE_ACCOUNT` variable is used by the API and must remain private. Never put service-account JSON in this repository or frontend.
 
