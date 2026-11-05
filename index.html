@@ -35,7 +35,7 @@ const featureLabels={"class12-projectile-motion":"Projectile Motion","class12-wa
 
 async function request(method="GET",query="",body){const token=await auth.currentUser?.getIdToken();if(!token)throw Error("Please sign in again.");const r=await fetch(API+query,{method,headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},...(body?{body:JSON.stringify(body)}:{})});const d=await r.json();if(!r.ok)throw Error(d.error||"Request failed");return d}
 function message(id,text,type=""){const el=$(id);el.textContent=text;el.className="notice "+type}
-function show(tab){document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===tab));document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));if(tab==="payments")loadPayments();if(tab==="users")loadUsers();if(tab==="music")loadMusic();if(tab==="social")loadSocial()}
+function show(tab){document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===tab));document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));if(tab==="payments")loadPayments();if(tab==="users")loadUsers()}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 $("loginBtn").onclick=async()=>{try{await signInWithPopup(auth,provider)}catch(e){message("loginMsg",e.message,"error")}};
 $("logoutBtn").onclick=()=>signOut(auth);
