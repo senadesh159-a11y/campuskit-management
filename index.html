@@ -17,12 +17,21 @@
 <button data-tab="payments">↗ &nbsp; Payments<small>Review requests</small></button>
 <button data-tab="users">♙ &nbsp; Users<small>Student accounts</small></button>
 <button data-tab="music">♫ &nbsp; Public music<small>Shared playlist</small></button>
+<button data-tab="social">◎ &nbsp; Social Management<small>Profiles, reports, groups</small></button>
 </div></aside><main class="main">
 <section id="overview" class="section active"><div class="heading"><div><h2>Overview</h2><p>Your CampusKit operations at a glance.</p></div><button id="refreshAll">↻ Refresh data</button></div><div class="stats">
 <div class="stat"><span>Pending payments</span><strong id="sPending">—</strong></div><div class="stat"><span>Approved payments</span><strong id="sApproved">—</strong></div><div class="stat"><span>Approved revenue</span><strong id="sRevenue">—</strong></div><div class="stat"><span>Registered users</span><strong id="sUsers">—</strong></div></div><div class="panel"><h3>Management Centre is connected</h3><p class="muted">Payment decisions are processed by the existing CampusKit API. User account actions use Firebase Admin. Public music updates are written to the existing <code>publicMusic</code> collection.</p><div id="overviewMsg" class="notice">Load the sections to view current records.</div></div></section>
 <section id="payments" class="section"><div class="heading"><div><h2>Payment requests</h2><p>Check UTR details before approving any request.</p></div><button id="refreshPayments">↻ Refresh</button></div><div class="panel"><div class="toolbar"><div class="tabs" id="paymentTabs"><button class="active" data-status="pending">Pending</button><button data-status="approved">Approved</button><button data-status="rejected">Rejected</button><button data-status="all">All requests</button></div></div><div class="table-wrap"><table><thead><tr><th>Student</th><th>Feature</th><th>Amount</th><th>UTR</th><th>Submitted</th><th>Status / action</th></tr></thead><tbody id="paymentRows"><tr><td colspan="6" class="empty">Loading payment requests…</td></tr></tbody></table></div></div></section>
 <section id="users" class="section"><div class="heading"><div><h2>User management</h2><p>Review registered Firebase accounts and control access.</p></div><button id="refreshUsers">↻ Refresh</button></div><div class="panel"><div class="toolbar"><input id="userSearch" placeholder="Search name, email or UID…"></div><div class="table-wrap"><table><thead><tr><th>Student</th><th>UID</th><th>Created</th><th>Last sign-in</th><th>Premium access</th><th>Account</th><th>Action</th></tr></thead><tbody id="userRows"><tr><td colspan="7" class="empty">Loading users…</td></tr></tbody></table></div></div></section>
 <section id="music" class="section"><div class="heading"><div><h2>Public music</h2><p>Manage tracks shown in the student website’s shared playlist.</p></div><button id="refreshMusic">↻ Refresh</button></div><div class="panel"><h3>Add a track</h3><form id="musicForm" class="formrow"><input id="trackTitle" placeholder="Song / playlist title" maxlength="120" required><input id="trackUrl" type="url" placeholder="HTTPS YouTube or Spotify URL" required><button class="primary">＋ Add to playlist</button></form><div id="musicMsg" class="notice hidden"></div></div><div class="panel"><div class="heading"><div><h3>Shared playlist</h3><p>Tracks currently available to students.</p></div><span id="musicCount" class="pill">0 tracks</span></div><div class="table-wrap"><table><thead><tr><th>Track</th><th>Provider</th><th>Added by</th><th>Date</th><th>Action</th></tr></thead><tbody id="musicRows"><tr><td colspan="5" class="empty">Loading tracks…</td></tr></tbody></table></div></div></section>
+<section id="social" class="section">
+<div class="heading"><div><h2>Social Management</h2><p>Moderate public profiles, student reports and communities. Private chat contents are never shown here.</p></div><button id="refreshSocial">↻ Refresh social data</button></div>
+<div class="stats"><div class="stat"><span>Student profiles</span><strong id="socialProfilesCount">—</strong></div><div class="stat"><span>Open reports</span><strong id="socialReportsCount">—</strong></div><div class="stat"><span>Communities</span><strong id="socialCommunitiesCount">—</strong></div><div class="stat"><span>Public posts</span><strong id="socialPostsCount">—</strong></div></div>
+<div class="panel"><h3>Student reports</h3><p class="muted">Review reported content or accounts. Resolve only after review.</p><div class="table-wrap"><table><thead><tr><th>Target</th><th>Reason</th><th>Reporter</th><th>Reported</th><th>Status / action</th></tr></thead><tbody id="socialReportRows"><tr><td colspan="5" class="empty">Loading reports…</td></tr></tbody></table></div></div>
+<div class="panel"><h3>Student profiles</h3><p class="muted">Hide or restore a profile when moderation is required.</p><div class="table-wrap"><table><thead><tr><th>Student</th><th>College / course</th><th>Visibility</th><th>Moderation</th><th>Action</th></tr></thead><tbody id="socialProfileRows"><tr><td colspan="5" class="empty">Loading profiles…</td></tr></tbody></table></div></div>
+<div class="panel"><h3>Communities</h3><p class="muted">Disable or re-enable public communities.</p><div class="table-wrap"><table><thead><tr><th>Community</th><th>Owner</th><th>Members</th><th>Status</th><th>Action</th></tr></thead><tbody id="socialCommunityRows"><tr><td colspan="5" class="empty">Loading communities…</td></tr></tbody></table></div></div>
+<div id="socialMsg" class="notice">Social moderation connects to the existing CampusKit Firebase project through the admin API.</div>
+</section>
 </main></div><div class="foot">CampusKit Management Centre · Separate admin website · Student website remains independent</div></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
@@ -37,7 +46,7 @@ const featureLabels={"class12-projectile-motion":"Projectile Motion","class12-wa
 
 async function request(method="GET",query="",body){const token=await auth.currentUser?.getIdToken();if(!token)throw Error("Please sign in again.");const r=await fetch(API+query,{method,headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},...(body?{body:JSON.stringify(body)}:{})});const d=await r.json();if(!r.ok)throw Error(d.error||"Request failed");return d}
 function message(id,text,type=""){const el=$(id);el.textContent=text;el.className="notice "+type}
-function show(tab){document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===tab));document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));if(tab==="payments")loadPayments();if(tab==="users")loadUsers();if(tab==="music")loadMusic()}
+function show(tab){document.querySelectorAll(".section").forEach(x=>x.classList.toggle("active",x.id===tab));document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));if(tab==="payments")loadPayments();if(tab==="users")loadUsers();if(tab==="music")loadMusic();if(tab==="social")loadSocial()}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 $("loginBtn").onclick=async()=>{try{await signInWithPopup(auth,provider)}catch(e){message("loginMsg",e.message,"error")}};
 $("logoutBtn").onclick=()=>signOut(auth);
@@ -51,6 +60,40 @@ $("userSearch").oninput=renderUsers;
 async function loadMusic(){const d=await request("GET","?resource=music");tracks=d.tracks||[];renderMusic()}
 function renderMusic(){ $("musicCount").textContent=tracks.length+" tracks";$("musicRows").innerHTML=tracks.length?tracks.map(t=>'<tr><td><strong>'+safe(t.title||"Untitled")+'</strong><br><a target="_blank" rel="noopener" href="'+safe(t.url)+'" class="muted">Open track ↗</a></td><td>'+safe(t.type||"link")+'</td><td>'+safe(t.addedBy||"—")+'</td><td>'+safe(date(t.createdAt))+'</td><td><button class="bad" data-track="'+safe(t.id)+'">Delete</button></td></tr>').join(""):'<tr><td colspan="5" class="empty">No public music tracks yet.</td></tr>';$("musicRows").querySelectorAll("[data-track]").forEach(b=>b.onclick=async()=>{if(!confirm("Remove this track from the student playlist?"))return;b.disabled=true;try{await request("DELETE","?resource=music&id="+encodeURIComponent(b.dataset.track));await loadMusic()}catch(e){alert(e.message);b.disabled=false}})}
 $("musicForm").onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{await request("POST","?resource=music",{title:$("trackTitle").value.trim(),url:$("trackUrl").value.trim()});$("musicForm").reset();message("musicMsg","Track added to the shared student playlist.","success");await loadMusic()}catch(err){message("musicMsg",err.message,"error")}finally{b.disabled=false}};
+
+async function loadSocial(){
+  message("socialMsg","Loading social moderation data…");
+  try{
+    const [summary,reports,profiles,communities]=await Promise.all([
+      request("GET","?resource=social&view=summary"),
+      request("GET","?resource=social&view=reports"),
+      request("GET","?resource=social&view=profiles"),
+      request("GET","?resource=social&view=communities")
+    ]);
+    const counts=summary.summary||{};
+    $("socialProfilesCount").textContent=counts.profiles??0;
+    $("socialReportsCount").textContent=counts.openReports??0;
+    $("socialCommunitiesCount").textContent=counts.communities??0;
+    $("socialPostsCount").textContent=counts.posts??0;
+    const reportRows=reports.reports||[];
+    $("socialReportRows").innerHTML=reportRows.length?reportRows.map(r=>'<tr><td><strong>'+safe(r.targetType||"Content")+'</strong><br><span class="muted">'+safe(r.targetId||"—")+'</span></td><td>'+safe(r.reason||r.details||"No reason supplied")+'</td><td>'+safe(r.reporterUid||"—")+'</td><td>'+safe(date(r.createdAt))+'</td><td><span class="status '+safe(r.status||"open")+'">'+safe(r.status||"open")+'</span>'+(r.status==="open"?'<div class="actions"><button class="good" data-social-type="report" data-social-action="resolve" data-id="'+safe(r.id)+'">Resolve</button><button class="bad" data-social-type="report" data-social-action="dismiss" data-id="'+safe(r.id)+'">Dismiss</button></div>':"")+'</td></tr>').join(""):'<tr><td colspan="5" class="empty">No student reports yet.</td></tr>';
+    const profileRows=profiles.profiles||[];
+    $("socialProfileRows").innerHTML=profileRows.length?profileRows.map(p=>'<tr><td><strong>'+safe(p.displayName||p.name||"Student")+'</strong><br><span class="muted">'+safe(p.uid)+'</span></td><td>'+safe([p.college,p.course,p.semester].filter(Boolean).join(" · ")||"—")+'</td><td>'+safe(p.visibility||"public")+'</td><td><span class="status '+(p.suspended?"disabled":"active")+'">'+(p.suspended?"Suspended":"Active")+'</span></td><td><button class="'+(p.suspended?"good":"bad")+'" data-social-type="profile" data-social-action="'+(p.suspended?"restore":"suspend")+'" data-id="'+safe(p.uid)+'">'+(p.suspended?"Restore":"Suspend")+'</button></td></tr>').join(""):'<tr><td colspan="5" class="empty">No student profiles have been created yet.</td></tr>';
+    const communityRows=communities.communities||[];
+    $("socialCommunityRows").innerHTML=communityRows.length?communityRows.map(c=>'<tr><td><strong>'+safe(c.name||"Untitled community")+'</strong><br><span class="muted">'+safe(c.description||"")+'</span></td><td>'+safe(c.ownerUid||"—")+'</td><td>'+safe(c.memberCount??"—")+'</td><td><span class="status '+(c.status==="disabled"?"disabled":"active")+'">'+safe(c.status||"active")+'</span></td><td><button class="'+(c.status==="disabled"?"good":"bad")+'" data-social-type="community" data-social-action="'+(c.status==="disabled"?"enable":"disable")+'" data-id="'+safe(c.id)+'">'+(c.status==="disabled"?"Enable":"Disable")+'</button></td></tr>').join(""):'<tr><td colspan="5" class="empty">No communities have been created yet.</td></tr>';
+    message("socialMsg","Social moderation data loaded. Private messages are intentionally excluded.","success");
+  }catch(e){message("socialMsg",e.message,"error")}
+}
+$("social").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-social-type]");if(!b)return;
+  const type=b.dataset.socialType,action=b.dataset.socialAction,id=b.dataset.id;
+  if(!confirm("Confirm "+action+" for this "+type+"?"))return;
+  b.disabled=true;
+  try{await request("PATCH","?resource=social",{type,action,id});await loadSocial()}
+  catch(err){alert(err.message);b.disabled=false}
+});
+$("refreshSocial").onclick=loadSocial;
+
 async function updateStats(){const [p,u]=await Promise.all([request("GET","?status=all"),request("GET","?resource=users")]);const list=p.requests||[];$("sPending").textContent=list.filter(x=>x.status==="pending").length;$("sApproved").textContent=list.filter(x=>x.status==="approved").length;$("sRevenue").textContent="₹"+list.filter(x=>x.status==="approved").reduce((a,x)=>a+Number(x.amount||0),0);$("sUsers").textContent=(u.users||[]).length}
 async function refreshAll(){try{await updateStats();$("overviewMsg").textContent="Connected successfully. Payment API and Firebase admin services are responding.";$("overviewMsg").className="notice success"}catch(e){message("overviewMsg",e.message,"error")}}
 $("refreshAll").onclick=refreshAll;$("refreshPayments").onclick=()=>loadPayments().catch(e=>alert(e.message));$("refreshUsers").onclick=()=>loadUsers().catch(e=>alert(e.message));$("refreshMusic").onclick=()=>loadMusic().catch(e=>alert(e.message));
